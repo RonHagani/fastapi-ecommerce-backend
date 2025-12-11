@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+    environment:
+      - DATABASE_URL=postgresql://postgresql:password@db:5432/taskdb
+    depends_on:
+      - db
+  
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=postgresql
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=taskdb
+    volumes:
+      - postgresql_data:/var/lib/postgresql/data 
+volumes:
+  postgresql_data:
