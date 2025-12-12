@@ -1,26 +1,25 @@
 import os
 import time
-from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import create_engine, Column, Integer, String, Boolean
+from sqlalchemy import create_engine, Column, Integer, String, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import OperationalError
 
+# --- Database Setup ---
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 def get_engine_with_retry():
     retries = 5
     while retries > 0:
         try:
-            print("Connecting to Database...")
             engine = create_engine(DATABASE_URL)
-            with engine.connect() as conn:
-                pass
-            print("Database connected successfully!")
+            engine.connect()
             return engine
-        except OperationalError:
-            print("Database not ready yet... waiting 5 seconds")
+        except Exception:
+            print(f"Database not ready... retrying in 5s ({retries} left)")
             time.sleep(5)
             retries -= 1
     raise Exception("Could not connect to database after 5 retries")
@@ -29,45 +28,58 @@ engine = get_engine_with_retry()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-class TaskModel(Base):
-    __tablename__ = "tasks"
+# --- Model ---
+class ProductModel(Base):
+    __tablename__ = "products"
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, index=True)
-    done = Column(Boolean, default=False)
+    name = Column(String, index=True)
+    description = Column(String)
+    price = Column(Float)
+    stock = Column(Integer)
 
 Base.metadata.create_all(bind=engine)
 
-class TaskCreate(BaseModel):
-    title: str
-    done: bool = False
+# --- Pydantic Schemas ---
+class ProductCreate(BaseModel):
+    name: str
+    description: str
+    price: float
+    stock: int
 
-class TaskResponse(BaseModel):
-    id: int
-    title: str
-    done: bool
+app = FastAPI(title="Store Inventory API")
 
-    class Config:
-        orm_mode = True
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-app = FastAPI()
+# --- Routes ---
 
 @app.get("/")
 def home():
-    return {"message": "Welcome to FastAPI Task Manager!"}
+    return {"message": "Welcome to the Inventory System API!"}
 
-@app.get("/tasks", response_model=list[TaskResponse])
-def get_tasks():
+@app.get("/products")
+def get_products():
     db = SessionLocal()
-    tasks = db.query(TaskModel).all()
+    products = db.query(ProductModel).all()
     db.close()
-    return tasks
+    return products
 
-@app.post("/tasks", response_model=TaskResponse)
-def add_task(task: TaskCreate):
+@app.post("/products")
+def create_product(product: ProductCreate):
     db = SessionLocal()
-    db_task = TaskModel(title=task.title, done=task.done)
-    db.add(db_task)
+    new_product = ProductModel(
+        name=product.name,
+        description=product.description,
+        price=product.price,
+        stock=product.stock
+    )
+    db.add(new_product)
     db.commit()
-    db.refresh(db_task)
+    db.refresh(new_product)
     db.close()
-    return db_task
+    return new_product
