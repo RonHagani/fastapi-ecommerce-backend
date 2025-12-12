@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-
   fronend:
     image: nginx:alpine
     ports:
@@ -17,7 +16,7 @@ services:
     volumes:
       - .:/app
     environment:
-      - DATABASE_URL=postgresql://postgresql:password@db:5432/taskdb
+      - DATABASE_URL=postgresql://postgresql:password@db:5432/store_db
     depends_on:
       - db
   
@@ -26,8 +25,16 @@ services:
     environment:
       - POSTGRES_USER=postgresql
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=taskdb
+      - POSTGRES_DB=store_db
     volumes:
-      - postgresql_data:/var/lib/postgresql/data 
+      - postgres_data:/var/lib/postgresql/data 
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+    depends_on:
+      - db
+
 volumes:
-  postgresql_data:
+  postgres_data:
