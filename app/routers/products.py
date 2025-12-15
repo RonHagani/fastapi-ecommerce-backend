@@ -61,7 +61,6 @@ async def update_product(
     product.price = product_update.price
     product.stock = product_update.stock
 
-    db.commit()
-    db.refresh(product)
+    await db.commit()
+    await db.refresh(product)
     return product
-
