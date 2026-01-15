@@ -5,7 +5,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from . import database, models, config
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="/auth/login",
+    scheme_name="JWTBearer",
+    description="Enter your **Email** and Password to get authorized"
+)
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(database.get_db)):
     credentials_exception = HTTPException(
@@ -16,16 +20,16 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
 
     try:
         payload = jwt.decode(token, config.settings.secret_key, algorithms=config.settings.algorithm)
-        username: str = payload.get("sub")
+        user_id: int = int(payload.get("sub"))
 
-        if username is None:
+        if user_id is None:
             raise credentials_exception
     
-    except JWTError:
+    except (JWTError, ValueError):
         raise credentials_exception
     
     result = await db.execute(
-        select(models.User).where(models.User.username == username)
+        select(models.User).where(models.User.id == user_id)
     )
     user = result.scalars().first()
 

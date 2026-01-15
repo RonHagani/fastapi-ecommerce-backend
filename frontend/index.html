@@ -1,59 +1,393 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Store Inventory Manager</title>
+    <title>TechVault</title>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
     <style>
-        body { background-color: #f8f9fa; }
-        .product-card { transition: transform 0.2s; }
-        .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-        .stock-badge { position: absolute; top: 10px; right: 10px; }
-        .price-tag { font-size: 1.2rem; font-weight: bold; color: #28a745; }
-        .card-actions { position: absolute; bottom: 15px; right: 15px; }
+        body {
+            background-color: #f4f6f9;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .container-fluid-custom {
+            width: 95%;
+            margin: 0 auto;
+        }
+
+        /* --- Search Bar --- */
+        .search-container {
+            position: relative;
+            width: 40%;
+        }
+
+        .search-input {
+            border-radius: 20px;
+            border: none;
+            padding-left: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: 0.3s;
+        }
+
+        .search-input:focus {
+            background: white;
+            color: black;
+            outline: none;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 10px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            display: none;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .search-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-item:hover {
+            background: #f8f9fa;
+        }
+
+        .search-item img {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            margin-right: 10px;
+        }
+
+        /* --- Sidebar & Cards --- */
+        .sidebar-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .category-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #495057;
+            border-left: 4px solid transparent;
+        }
+
+        .category-item:hover,
+        .category-item.active {
+            background: #e7f1ff;
+            color: #0d6efd;
+            border-left-color: #0d6efd;
+            font-weight: bold;
+        }
+
+        .product-card {
+            background: white;
+            border: none;
+            border-radius: 8px;
+            transition: 0.2s;
+            cursor: pointer;
+            height: 100%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-img-top {
+            height: 200px;
+            object-fit: contain;
+            padding: 15px;
+            width: 100%;
+        }
+
+        .price-tag {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #0d6efd;
+        }
+
+        /* --- Profile Styles --- */
+        .profile-header {
+            background: linear-gradient(135deg, #0d6efd, #0dcaf0);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
+
 <body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
-        <div class="container">
-            <a class="navbar-brand" href="#"><i class="fas fa-boxes me-2"></i>InventoryPro</a>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm py-3">
+        <div class="container-fluid px-5">
+            <a class="navbar-brand fw-bold" href="#" onclick="backToGallery(true)">
+                <i class="fas fa-microchip me-2"></i>TechVault
+            </a>
+
+            <div class="search-container mx-auto d-none d-lg-block">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" class="form-control search-input" id="global-search" name="search_unique_xyz"
+                    autocomplete="off" placeholder="Search products..." oninput="handleSearch(this.value)">
+                <div class="search-results" id="search-results-dropdown"></div>
+            </div>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse flex-grow-0" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item me-3">
+                        <a class="nav-link position-relative" href="javascript:void(0)" onclick="toggleCart()"
+                            role="button">
+                            <i class="fas fa-shopping-cart fa-lg"></i>
+                            <span id="cart-badge"
+                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                style="font-size: 0.6rem; display: none;">0</span>
+                        </a>
+                    </li>
+                    <li class="nav-item d-flex align-items-center" id="auth-buttons"></li>
+                </ul>
+            </div>
         </div>
     </nav>
 
-    <div class="container">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2><i class="fas fa-warehouse text-primary me-2"></i>Current Inventory</h2>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
-                <i class="fas fa-plus me-2"></i>Add Product
-            </button>
+    <div class="container-fluid-custom mt-4">
+
+        <div class="row" id="main-view">
+            <div class="col-md-2 d-none d-md-block">
+                <div class="sidebar-card">
+                    <div class="bg-dark text-white p-3 fw-bold">CATEGORIES</div>
+                    <div class="d-flex flex-column py-2">
+                        <div class="category-item active" onclick="filterCategory(null, this)">All Products</div>
+                        <div class="category-item" onclick="filterCategory('Laptops', this)">Laptops</div>
+                        <div class="category-item" onclick="filterCategory('Smartphones', this)">Smartphones</div>
+                        <div class="category-item" onclick="filterCategory('Consoles', this)">Consoles</div>
+                        <div class="category-item" onclick="filterCategory('Accessories', this)">Accessories</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-10">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="fw-bold" id="page-title">All Products</h2>
+                    <button id="add-product-btn" class="btn btn-success d-none shadow-sm"
+                        onclick="openAddProductModal()">
+                        <i class="fas fa-plus"></i> Add Product
+                    </button>
+                </div>
+                <div class="row g-4" id="products-container">
+                    </div>
+            </div>
         </div>
 
-        <div id="productsGrid" class="row g-4"></div>
+        <div id="single-product-view" class="d-none">
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="#" onclick="backToGallery(true)">Home</a></li>
+                    <li class="breadcrumb-item active" aria-current="page" id="breadcrumb-name">Product</li>
+                </ol>
+            </nav>
+
+            <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+                <div class="row g-0">
+                    <div class="col-md-5 bg-white p-5 d-flex align-items-center justify-content-center border-end">
+                        <img id="view-img" src="" class="img-fluid" style="max-height: 450px; object-fit: contain;">
+                    </div>
+                    <div class="col-md-7 p-5 bg-light">
+                        <div class="mb-3">
+                            <span class="badge bg-primary px-3 py-2 rounded-pill" id="view-category">CATEGORY</span>
+                            <span class="badge bg-success px-3 py-2 rounded-pill ms-1">In Stock</span>
+                        </div>
+
+                        <h1 class="fw-bold display-5 mb-3" id="view-name">Product Name</h1>
+                        <h4 class="text-muted mb-4" id="view-specs"></h4>
+                        <h2 class="text-primary fw-bold mb-4" id="view-price">$0.00</h2>
+
+                        <div class="card card-body border-0 shadow-sm mb-4">
+                            <h5 class="fw-bold">Description</h5>
+                            <p class="text-muted mb-0" id="view-desc">No description.</p>
+                        </div>
+
+                        <div class="d-flex align-items-center mb-4">
+                            <i class="fas fa-box me-2 text-muted"></i>
+                            <strong>Stock Available:</strong>&nbsp;<span id="view-stock">0</span>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-block" id="single-product-actions">
+                            </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="profile-view" class="d-none">
+            <button class="btn btn-outline-secondary mb-3 rounded-pill" onclick="backToGallery(true)">
+                <i class="fas fa-arrow-left"></i> Back to Store
+            </button>
+            <div class="profile-header">
+                <h1 class="display-5 fw-bold"><i class="fas fa-user-circle me-3"></i>My Profile</h1>
+                <p class="lead mb-0" id="profile-email">loading...</p>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body p-4">
+                            <h5 class="fw-bold mb-3">Shipping Address</h5>
+                            <form id="address-form" onsubmit="event.preventDefault(); saveAddress();">
+                                <div class="mb-2">
+                                    <label class="small text-muted">Street</label>
+                                    <input type="text" id="addrStreet" class="form-control" placeholder="Street Address">
+                                </div>
+                                <div class="row g-2 mb-3">
+                                    <div class="col">
+                                        <label class="small text-muted">City</label>
+                                        <input type="text" id="addrCity" class="form-control" placeholder="City">
+                                    </div>
+                                    <div class="col">
+                                        <label class="small text-muted">Zip</label>
+                                        <input type="text" id="addrZip" class="form-control" placeholder="Zip Code">
+                                    </div>
+                                </div>
+                                <button class="btn btn-dark w-100 rounded-pill shadow-sm fw-bold py-2">
+                                    <i class="fas fa-save me-2"></i> Update Address
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-8">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body p-4">
+                            <h5 class="fw-bold mb-3">Order History</h5>
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Order #</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Total</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="orders-table-body"></tbody>
+                            </table>
+                            <div id="no-orders-msg" class="text-center text-muted mt-3 d-none">No orders found.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="cartOffcanvas" aria-labelledby="cartOffcanvasLabel">
+        <div class="offcanvas-header bg-dark text-white">
+            <h5 class="offcanvas-title fw-bold" id="cartOffcanvasLabel">
+                <i class="fas fa-shopping-bag me-2"></i> Your Cart
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body p-0 d-flex flex-column">
+            <div id="cart-items-container" class="flex-grow-1 p-3" style="overflow-y: auto;">
+                </div>
+            <div class="border-top p-4 bg-light" id="cart-footer">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-muted fw-bold">Subtotal</span>
+                    <span class="fs-4 fw-bold text-primary" id="cart-total">$0.00</span>
+                </div>
+                <button class="btn btn-success w-100 py-3 fw-bold shadow-sm rounded-3" onclick="checkout()">
+                    PROCEED TO CHECKOUT <i class="fas fa-arrow-right ms-2"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="loginModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-body p-4 text-center">
+                    <h4 class="fw-bold mb-3">Login</h4>
+                    <input id="loginEmail" class="form-control mb-2" placeholder="Email">
+                    <input type="password" id="loginPassword" class="form-control mb-3" placeholder="Password">
+                    <button onclick="login()" class="btn btn-dark w-100">Login</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="registerModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-body p-4 text-center">
+                    <h4 class="fw-bold mb-3">Register</h4>
+                    <input id="regEmail" class="form-control mb-2" placeholder="Email">
+                    <input id="regUsername" class="form-control mb-2" placeholder="Username">
+                    <input type="password" id="regPassword" class="form-control mb-3" placeholder="Password">
+                    <button onclick="registerUser()" class="btn btn-primary w-100">Sign Up</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="modal fade" id="addProductModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Add New Product</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title">Add Product</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="addForm">
-                        <div class="mb-3"><label>Name</label><input type="text" id="addName" class="form-control" required></div>
-                        <div class="mb-3"><label>Description</label><input type="text" id="addDesc" class="form-control" required></div>
-                        <div class="row">
-                            <div class="col"><label>Price ($)</label><input type="number" step="0.01" id="addPrice" class="form-control" required></div>
-                            <div class="col"><label>Stock</label><input type="number" id="addStock" class="form-control" required></div>
+                    <input id="prodName" class="form-control mb-2" placeholder="Name (e.g. iPhone 15)">
+                    <select id="prodCategory" class="form-select mb-2">
+                        <option value="" disabled selected>Select Category</option>
+                        <option value="Laptops">Laptops</option>
+                        <option value="Smartphones">Smartphones</option>
+                        <option value="Consoles">Consoles</option>
+                        <option value="Accessories">Accessories</option>
+                    </select>
+                    <input id="prodSpecs" class="form-control mb-2" placeholder="Short Specs (e.g. 256GB, 8GB RAM)">
+                    <textarea id="prodDesc" class="form-control mb-2" placeholder="Full Description" rows="3"></textarea>
+                    <div class="row g-2 mb-2">
+                        <div class="col">
+                            <input type="number" id="prodPrice" class="form-control" placeholder="Price">
                         </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" onclick="addProduct()">Save</button>
+                        <div class="col">
+                            <input type="number" id="prodStock" class="form-control" placeholder="Stock">
+                        </div>
+                    </div>
+                    <input id="prodImage" class="form-control mb-3" placeholder="Image URL">
+                    <button onclick="saveProduct()" class="btn btn-success w-100">Save</button>
                 </div>
             </div>
         </div>
@@ -62,136 +396,48 @@
     <div class="modal fade" id="editProductModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header bg-light">
+                <div class="modal-header bg-warning">
                     <h5 class="modal-title">Edit Product</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <input type="hidden" id="editId"> <div class="mb-3"><label>Name</label><input type="text" id="editName" class="form-control"></div>
-                    <div class="mb-3"><label>Description</label><input type="text" id="editDesc" class="form-control"></div>
-                    <div class="row">
-                        <div class="col"><label>Price ($)</label><input type="number" step="0.01" id="editPrice" class="form-control"></div>
-                        <div class="col"><label>Stock</label><input type="number" id="editStock" class="form-control"></div>
-                    </div>
+                    <input type="hidden" id="editProdId">
+                    <input type="text" id="editProdName" class="form-control mb-2">
+                    <select id="editProdCategory" class="form-select mb-2">
+                        <option value="Laptops">Laptops</option>
+                        <option value="Smartphones">Smartphones</option>
+                        <option value="Consoles">Consoles</option>
+                        <option value="Accessories">Accessories</option>
+                    </select>
+                    <input id="editProdSpecs" class="form-control mb-2" placeholder="Short Specs">
+                    <textarea id="editProdDesc" class="form-control mb-2" rows="2"></textarea>
+                    <input type="number" id="editProdPrice" class="form-control mb-2">
+                    <input type="number" id="editProdStock" class="form-control mb-2">
+                    <input type="text" id="editProdImage" class="form-control mb-3">
+                    <button onclick="updateProduct()" class="btn btn-warning w-100">Update Product</button>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-success" onclick="saveEdit()">Update Product</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-body text-center p-5">
+                    <div class="mb-4 text-danger"><i class="fas fa-trash-alt fa-3x"></i></div>
+                    <h3 class="fw-bold mb-3">Are you sure?</h3>
+                    <p class="text-muted mb-4">Do you really want to delete this item? This process cannot be undone.</p>
+                    <div class="d-flex justify-content-center gap-3">
+                        <button class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
+                        <button onclick="executeDelete()" class="btn btn-danger px-4">Delete</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <script>
-        const API_URL = 'http://localhost:5000/products';
-        let currentProducts = []; // שומרים את המוצרים בזיכרון כדי שנוכל לערוך אותם
-
-        async function loadProducts() {
-            const grid = document.getElementById('productsGrid');
-            try {
-                const response = await fetch(API_URL);
-                currentProducts = await response.json(); // שומרים לשימוש גלובלי
-                
-                grid.innerHTML = '';
-                currentProducts.forEach(p => {
-                    const stockClass = p.stock < 5 ? 'bg-danger' : 'bg-success';
-                    // שים לב לכפתור העריכה החדש למטה שקורא ל-openEditModal
-                    const html = `
-                        <div class="col-md-4">
-                            <div class="card product-card h-100">
-                                <span class="badge ${stockClass} stock-badge">${p.stock} in stock</span>
-                                <div class="card-body pb-5">
-                                    <h5 class="card-title">${p.name}</h5>
-                                    <p class="card-text text-muted">${p.description}</p>
-                                    <span class="price-tag">$${p.price}</span>
-                                    <div class="card-actions">
-                                        <button class="btn btn-outline-primary btn-sm" onclick="openEditModal(${p.id})">
-                                            <i class="fas fa-edit"></i> Edit
-                                        </button>
-                                        <button class="btn btn-outline-danger btn-sm" onclick="deleteProduct(${p.id})">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    grid.innerHTML += html;
-                });
-            } catch (err) {
-                console.error(err);
-            }
-        }
-
-        // פתיחת חלון העריכה ומילוי נתונים
-        function openEditModal(id) {
-            const product = currentProducts.find(p => p.id === id);
-            if (!product) return;
-
-            document.getElementById('editId').value = product.id;
-            document.getElementById('editName').value = product.name;
-            document.getElementById('editDesc').value = product.description;
-            document.getElementById('editPrice').value = product.price;
-            document.getElementById('editStock').value = product.stock;
-
-            const modal = new bootstrap.Modal(document.getElementById('editProductModal'));
-            modal.show();
-        }
-
-        // שליחת העדכון לשרת
-        async function saveEdit() {
-            const id = document.getElementById('editId').value;
-            const data = {
-                name: document.getElementById('editName').value,
-                description: document.getElementById('editDesc').value,
-                price: parseFloat(document.getElementById('editPrice').value),
-                stock: parseInt(document.getElementById('editStock').value)
-            };
-
-            await fetch(`${API_URL}/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-
-            // סגירה ורענון
-            const modalEl = document.getElementById('editProductModal');
-            const modal = bootstrap.Modal.getInstance(modalEl);
-            modal.hide();
-            loadProducts();
-        }
-
-        // הוספה רגילה
-        async function addProduct() {
-            const data = {
-                name: document.getElementById('addName').value,
-                description: document.getElementById('addDesc').value,
-                price: parseFloat(document.getElementById('addPrice').value),
-                stock: parseInt(document.getElementById('addStock').value)
-            };
-            await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            const modal = bootstrap.Modal.getInstance(document.getElementById('addProductModal'));
-            modal.hide();
-            loadProducts();
-        }
-
-        // פונקציית המחיקה
-        async function deleteProduct(id) {
-            if (confirm("Are you sure you want to delete this product?")) {
-                await fetch(`${API_URL}/${id}`, {
-                    method: 'DELETE'
-                });
-                loadProducts(); // רענון המסך אחרי המחיקה
-            }
-        }
-
-        loadProducts();
-    </script>
+    <script src="/static/js/scripts.js"></script>
 </body>
+
 </html>

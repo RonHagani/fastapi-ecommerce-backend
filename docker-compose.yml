@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  fronend:
+  frontend:
     image: nginx:alpine
     ports:
       - "80:80"
@@ -18,8 +18,14 @@ services:
       - .:/app
     environment:
       - DATABASE_URL=postgresql://postgresql:password@db:5432/store_db
+      - MAIL_USERNAME=ronzxcvbnm11@gmail.com
+      - MAIL_PASSWORD=gfsk lawu jpem vmpo
+      - MAIL_FROM=ronzxcvbnm11@gmail.com
+      - MAIL_PORT=587
+      - MAIL_SERVER=smtp.gmail.com
     depends_on:
       - db
+    restart: always
   
   db:
     image: postgres:15-alpine
